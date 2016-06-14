@@ -16,7 +16,9 @@
 #include <openssl/md5.h>
 #include <openssl/rand.h>
 #include <openssl/rc4.h>
-#include <openssl/ripemd.h>
+#ifndef OPENSSL_IS_BORINGSSL
+  #include <openssl/ripemd.h>
+#endif
 #include <openssl/sha.h>
 
 extern "C" {
@@ -250,6 +252,7 @@ static int l_rand_pseudo_bytes( lua_State *L ) /** rand_pseudo_bytes( number byt
   return 1;
 }
 
+#ifndef OPENSSL_IS_BORINGSSL
 static int l_md4(lua_State *L)     /** md4(string s) */
 {
   size_t len;
@@ -259,6 +262,7 @@ static int l_md4(lua_State *L)     /** md4(string s) */
   lua_pushlstring( L, (char *) MD4( s, len, digest ), 16 );
   return 1;
 }
+#endif
 
 static int l_md5(lua_State *L)     /** md5(string s) */
 {
@@ -280,6 +284,7 @@ static int l_sha1(lua_State *L)     /** sha1(string s) */
   return 1;
 }
 
+#ifndef OPENSSL_IS_BORINGSSL
 static int l_ripemd160(lua_State *L)     /** ripemd160(string s) */
 {
   size_t len;
@@ -289,6 +294,7 @@ static int l_ripemd160(lua_State *L)     /** ripemd160(string s) */
   lua_pushlstring( L, (char *) RIPEMD160( s, len, digest ), 20 );
   return 1;
 }
+#endif
 
 static int l_digest(lua_State *L)     /** digest(string algorithm, string message) */
 {
@@ -344,6 +350,7 @@ struct enumerator_data {
   int index;
 };
 
+#ifndef OPENSSL_IS_BORINGSSL
 static void enumerate_algorithms( const OBJ_NAME * name, void * arg )
 {
   struct enumerator_data* data = (struct enumerator_data *) arg;
@@ -351,6 +358,7 @@ static void enumerate_algorithms( const OBJ_NAME * name, void * arg )
   lua_rawseti( data->L, -2, data->index );
   data->index++;
 }
+#endif
 
 static int l_supported_digests(lua_State *L) /** supported_digests() */
 {
@@ -359,7 +367,9 @@ static int l_supported_digests(lua_State *L) /** supported_digests() */
   data.index = 1;
 
   lua_newtable( L );
+#ifndef OPENSSL_IS_BORINGSSL
   OBJ_NAME_do_all_sorted( OBJ_NAME_TYPE_MD_METH,enumerate_algorithms, &data );
+#endif
 
   return 1;
 }
@@ -371,7 +381,9 @@ static int l_supported_ciphers(lua_State *L) /** supported_ciphers() */
   data.index = 1;
 
   lua_newtable( L );
+#ifndef OPENSSL_IS_BORINGSSL
   OBJ_NAME_do_all_sorted( OBJ_NAME_TYPE_CIPHER_METH,enumerate_algorithms, &data );
+#endif
 
   return 1;
 }
@@ -494,21 +506,32 @@ static int l_DES_string_to_key(lua_State *L) /** DES_string_to_key( string data 
     return luaL_error( L, "String must have length of 7 bytes." );
 
   DES_cblock key;
-  key[0] = data[0];
+
+#ifdef OPENSSL_IS_BORINGSSL
+  key.bytes[0] = data[0];
+  for( int i = 1; i < 8; i++ )
+    key.bytes[i] = data[i-1] << (8-i) | data[i] >> i;
+#else
+    key[0] = data[0];
   for( int i = 1; i < 8; i++ )
     key[i] = data[i-1] << (8-i) | data[i] >> i;
-
+#endif
   DES_set_odd_parity( &key );
-
-  lua_pushlstring( L, (char *) key, 8 );
+#ifdef OPENSSL_IS_BORINGSSL
+  lua_pushlstring( L, (char *) key.bytes, 8 );
+#else
+  lua_pushlstring( L, (char *) key, 8);
+#endif
   return 1;
 }
 
+#ifndef OPENSSL_IS_BORINGSSL
 static int l_rc4_options (lua_State *L)
 {
   lua_pushstring(L, RC4_options());
   return 1;
 }
+#endif
 
 static int l_rc4_encrypt (lua_State *L)
 {
@@ -572,10 +595,14 @@ static const struct luaL_Reg openssllib[] = {
   { "bignum_mod_exp", l_bignum_mod_exp },
   { "rand_bytes", l_rand_bytes },
   { "rand_pseudo_bytes", l_rand_pseudo_bytes },
+#ifndef OPENSSL_IS_BORINGSSL
   { "md4", l_md4 },
+#endif
   { "md5", l_md5 },
   { "sha1", l_sha1 },
+#ifndef OPENSSL_IS_BORINGSSL
   { "ripemd160", l_ripemd160 },
+#endif
   { "digest", l_digest },
   { "hmac", l_hmac },
   { "encrypt", l_encrypt },
@@ -583,7 +610,9 @@ static const struct luaL_Reg openssllib[] = {
   { "DES_string_to_key", l_DES_string_to_key },
   { "supported_digests", l_supported_digests },
   { "supported_ciphers", l_supported_ciphers },
+#ifndef OPENSSL_IS_BORINGSSL
   { "rc4_options", l_rc4_options },
+#endif
   { "rc4", l_rc4 },
   { NULL, NULL }
 };
