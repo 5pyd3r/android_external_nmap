@@ -396,7 +396,9 @@ nmap_files := \
 	nse_main.lua \
 	nmap-services \
 	nmap-service-probes \
-	nmap-payloads
+	nmap-payloads \
+	nmap-rpc \
+	nmap-mac-prefixes
 
 NMAP_SHARE := $(TARGET_OUT)/usr/share/$(LOCAL_MODULE)/
 NMAP_DATA := $(addprefix $(LOCAL_PATH)/, $(nmap_files))
