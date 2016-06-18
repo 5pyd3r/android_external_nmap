@@ -305,7 +305,7 @@ LOCAL_ARM_MODE := arm
 LOCAL_CPP_EXTENSION := .cc
 
 # fixed flags
-LOCAL_CFLAGS+= -ffunction-sections -fdata-sections 
+LOCAL_CFLAGS+= -ffunction-sections -fdata-sections -DANDROID
 
 LOCAL_CPPFLAGS:= -DHAVE_CONFIG_H -DNMAP_NAME=\"Nmap\" \
 -DNMAP_URL=\"http://nmap.org\" \
@@ -313,7 +313,7 @@ LOCAL_CPPFLAGS:= -DHAVE_CONFIG_H -DNMAP_NAME=\"Nmap\" \
 -DNMAPDATADIR=\"/system/usr/share/nmap\" \
 -D_FORTIFY_SOURCE=2 -fno-strict-aliasing -frtti 
 
-LOCAL_LDFLAGS:=  -Wl,--gc-sections
+LOCAL_LDFLAGS:=  -Wl,--gc-sections 
 
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/liblinear\
@@ -384,7 +384,8 @@ LOCAL_STATIC_LIBRARIES:= \
 	liblua\
 	liblinear \
 	libssl_static \
-	libcrypto_static
+	libcrypto_static \
+	libcutils
 
 LOCAL_MODULE := nmap
 LOCAL_MODULE_PATH := $(TARGET_OUT_OPTIONAL_EXECUTABLES)

@@ -187,6 +187,10 @@
 #include "timing.h"
 #include "Target.h"
 
+#ifdef ANDROID
+#include <cutils/properties.h>
+#endif
+
 #include <stdlib.h>
 #include <limits.h>
 #include <list>
@@ -984,6 +988,16 @@ static void parse_resolvdotconf() {
   fclose(fp);
 }
 
+#ifdef ANDROID
+static void android_getdnsproperty() {
+  const char DNS_PROPERTY[] = "net.dns1";
+  char ipaddr[INET_ADDRSTRLEN+1];
+
+  property_get(DNS_PROPERTY, ipaddr, "8.8.8.8");
+
+  add_dns_server(ipaddr);
+}
+#endif
 
 static void parse_etchosts(const char *fname) {
   FILE *fp;
@@ -1065,7 +1079,11 @@ static void init_servs(void) {
     add_dns_server(o.dns_servers);
   } else {
 #ifndef WIN32
+#ifndef ANDROID
     parse_resolvdotconf();
+#else
+    android_getdnsproperty();
+#endif
 #else
     win32_read_registry();
 #endif
